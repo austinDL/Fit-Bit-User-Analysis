@@ -20,7 +20,9 @@ SELECT
 INTO daily_activity_temp
 FROM daily_activity;
 
+-- Drop the ActivityDate column, since it now contains repeated information
 ALTER TABLE daily_activity_temp
 DROP COLUMN ActivityDate;
 
+-- Query the results to save it to a csv file
 SELECT * FROM daily_activity_temp;
