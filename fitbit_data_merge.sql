@@ -60,6 +60,7 @@ INSERT INTO dbo.all_minute_data
 -- Delete the rows will NULL ID values
 DELETE FROM dbo.all_minute_data WHERE ID IS NULL;
 
--- Check the resulting table
+-- Check the resulting table and save it to a csv file
+USE [Fitness Tracker];
 SELECT * FROM all_minute_data
 ORDER BY ID, [Date];
