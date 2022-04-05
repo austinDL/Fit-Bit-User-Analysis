@@ -5,6 +5,9 @@ SELECT TOP 5 * FROM daily_activity;
 SELECT TOP 5 * FROM all_minute_data;
 SELECT TOP 5 * FROM weight_log_info;
 
+-- ================================================================= --
+-- Evaluate how users' activity changes between the days of the week --
+-- ================================================================= --
 -- Get the user activity for each day of the week
 SELECT 
 	-- Extract the day of the week to conduct an aggregate
