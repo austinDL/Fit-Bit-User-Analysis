@@ -14,19 +14,19 @@ SELECT
 	DATENAME(weekday, ActivityDate) AS 'Day of Week',
 	DATEPART(weekday, ActivityDate) AS day_num,
 	-- Aggregate the data by day of the week
-	AVG(VeryActiveDistance)         AS 'Very Active Distance',
-	AVG(ModeratelyActiveDistance)   AS 'Moderately Active Distance',
-	AVG(LightActiveDistance)        AS 'Lightly Active Distance',   -- Rename to maintain consistency
-	AVG(VeryActiveMinutes)          AS 'Very Active Minutes',
-	AVG(FairlyActiveMinutes)        AS 'Moderately Active Minutes', -- Rename to maintain consistency
-	AVG(LightlyActiveMinutes)       AS 'Lightly Active Minutes'
+	AVG(VeryActiveDistance)                        AS 'Very Active Distance',
+	AVG(ModeratelyActiveDistance)                  AS 'Moderately Active Distance',
+	AVG(LightActiveDistance)                       AS 'Lightly Active Distance',   -- Rename to maintain consistency
+	AVG(CAST(VeryActiveMinutes AS FLOAT))          AS 'Very Active Minutes',
+	AVG(CAST(FairlyActiveMinutes AS FLOAT))        AS 'Moderately Active Minutes', -- Rename to maintain consistency
+	AVG(CAST(LightlyActiveMinutes AS FLOAT))       AS 'Lightly Active Minutes'
 FROM daily_activity
 GROUP BY DATENAME(weekday, ActivityDate), DATEPART(weekday, ActivityDate)
 -- Order the data by the day of the week
 ORDER BY day_num;
 
 -- ============================================= --
--- Evaluate the affect of sleep on your activity --
+-- Evaluate the affect of sleep on user activity --
 -- ============================================= --
 -- Create a function to calculate the rate of change
 ---- This function will handle the scenarios when the rate of change happens over 0 time, causing a divide by 0 error
@@ -38,7 +38,7 @@ BEGIN
 	IF (@time > 0)
 		SET @RoC = @val / @time
 	ELSE
-		SET @RoC = 0
+		SET @RoC = NULL
 	RETURN @RoC
 END;
 
@@ -81,3 +81,8 @@ SELECT
 FROM daily_activity_CTE AS DA
 JOIN daily_sleep AS DS
 	ON DS.ActivityDate = DA.ActivityDate AND DS.Id = DA.Id
+
+
+-- ============================================= --
+-- Evaluate the affect of sleep on your activity --
+-- ============================================= --
