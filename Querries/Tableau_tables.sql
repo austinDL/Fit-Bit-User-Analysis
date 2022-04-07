@@ -84,5 +84,51 @@ JOIN daily_sleep AS DS
 
 
 -- ============================================= --
--- Evaluate the affect of sleep on your activity --
+-- Evaluate users' activity in between weigh-ins --
 -- ============================================= --
+
+-- Include the previous weight log date to determine the activity between weigh-ins
+WITH weight_log AS (
+	SELECT
+		Id,
+		Number_of_Logs,
+		CAST([Date] AS DATE) WeighIn,
+		CAST(
+			LAG([Date]) OVER(PARTITION BY Id ORDER BY [Date]) AS DATE
+		) AS Previous_WeighIn,
+		WeightLoss_pounds
+	FROM weight_log_info
+)
+SELECT 
+	WeighIn [Date],
+	WeightLoss_pounds 'Weight Loss [lbs]',
+	(
+		SELECT SUM(Calories) / DATEDIFF(DAY, Previous_WeighIn, WeighIn)
+		FROM daily_activity da
+		WHERE 
+			da.ActivityDate BETWEEN Previous_WeighIn AND WeighIn
+			AND da.Id = weight_log.Id
+	) AS DailyCaloriesLost,
+	(
+		SELECT SUM(TotalSteps) / DATEDIFF(DAY, Previous_WeighIn, WeighIn)
+		FROM daily_activity da
+		WHERE 
+			da.ActivityDate BETWEEN Previous_WeighIn AND WeighIn
+			AND da.Id = weight_log.Id
+	) AS DailySteps,
+	(
+		SELECT SUM(TotalDistance) / DATEDIFF(DAY, Previous_WeighIn, WeighIn)
+		FROM daily_activity da
+		WHERE 
+			da.ActivityDate BETWEEN Previous_WeighIn AND WeighIn
+			AND da.Id = weight_log.Id
+	) AS DailyDistanceTravelled,
+	(
+		SELECT (SUM(VeryActiveMinutes) + SUM(FairlyActiveMinutes) + SUM(LightlyActiveMinutes))/ DATEDIFF(DAY, Previous_WeighIn, WeighIn)
+		FROM daily_activity da
+		WHERE 
+			da.ActivityDate BETWEEN Previous_WeighIn AND WeighIn
+			AND da.Id = weight_log.Id
+	) AS DailyActivityTime
+FROM weight_log
+ORDER BY Number_of_Logs DESC, Id, WeighIn;
