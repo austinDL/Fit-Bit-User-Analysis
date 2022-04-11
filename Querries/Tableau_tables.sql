@@ -100,8 +100,9 @@ WITH weight_log AS (
 	FROM weight_log_info
 )
 SELECT 
+	Id,
 	WeighIn [Date],
-	WeightLoss_pounds 'Weight Loss [lbs]',
+	WeightLoss_pounds/DATEDIFF(DAY, Previous_WeighIn, WeighIn) 'Daily Weight Loss [lbs]',
 	(
 		SELECT SUM(Calories) / DATEDIFF(DAY, Previous_WeighIn, WeighIn)
 		FROM daily_activity da
@@ -129,6 +130,33 @@ SELECT
 		WHERE 
 			da.ActivityDate BETWEEN Previous_WeighIn AND WeighIn
 			AND da.Id = weight_log.Id
-	) AS DailyActivityTime
+	) AS DailyActivityTime,
+	-- The remaining queries aim to acquire the users' intensity
+	(
+		SELECT AVG(Intensity)/ DATEDIFF(DAY, Previous_WeighIn, WeighIn)
+		FROM all_minute_data md
+		WHERE 
+			md.[Date] BETWEEN Previous_WeighIn AND WeighIn
+			AND md.ID = weight_log.Id
+			AND md.Intensity > 0 -- We only care about when the user is active
+	) AS AverageDailyIntensity,
+	(
+		SELECT AVG(METs)/ DATEDIFF(DAY, Previous_WeighIn, WeighIn)
+		FROM all_minute_data md
+		WHERE 
+			md.[Date] BETWEEN Previous_WeighIn AND WeighIn
+			AND md.ID = weight_log.Id
+	) AS AverageDailyMETs,
+	(
+		SELECT AVG(HeartRate)/ DATEDIFF(DAY, Previous_WeighIn, WeighIn)
+		FROM all_minute_data md
+		WHERE 
+			md.[Date] BETWEEN Previous_WeighIn AND WeighIn
+			AND md.ID = weight_log.Id
+	) AS AverageDailyHeartRate
 FROM weight_log
+-- We need atleast 2 data points to determine a trend (3 data points gives us 2 data points for weight loss)
+WHERE Number_of_Logs > 2
 ORDER BY Number_of_Logs DESC, Id, WeighIn;
+
+SELECT Intensity FROM all_minute_data WHERE Intensity > 0;
