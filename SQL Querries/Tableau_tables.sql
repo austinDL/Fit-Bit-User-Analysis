@@ -160,3 +160,41 @@ WHERE Number_of_Logs > 2
 ORDER BY Number_of_Logs DESC, Id, WeighIn;
 
 SELECT Intensity FROM all_minute_data WHERE Intensity > 0;
+
+
+WITH daily_sleep AS (
+	SELECT
+		ID,
+		FORMAT([Date], 'yyyy-MM-dd') AS Day_of_year,
+		DATEDIFF(MINUTE, MIN([Date]), MAX([Date])) AS sleep_hours
+	FROM all_minute_data
+	WHERE Sleep_Score IS NOT NULL
+	GROUP BY ID, FORMAT([Date], 'yyyy-MM-dd')
+),
+-- Add a column of Total Active Time to the daily_activity table
+daily_activity_CTE AS (
+	SELECT *,
+		-- We need to cast the columns to BIGINT values to avoid TINYINT overflow problems
+		CAST(VeryActiveMinutes AS BIGINT) 
+		+ CAST(LightlyActiveMinutes AS BIGINT) 
+		+ CAST(FairlyActiveMinutes AS BIGINT) ActivityTime
+	FROM daily_activity
+)
+SELECT 
+	DA.ActivityDate AS [Date],
+	DA.TotalDistance AS 'Distance [km]',
+	DA.ActivityTime AS 'Activity Time [mins]',
+	DA.TotalSteps AS Steps,
+	DA.Calories AS Calories,
+	DS.sleep_hours AS 'Sleep Time [hrs]',
+	-- Calculate the average speeds for the different activity levels
+	---- Note: we multiply by 60 to convert from km/min to km/hr
+	dbo.GetRateOfChange(DA.VeryActiveMinutes, DA.VeryActiveDistance)*60
+		AS 'Very Active Speed [km/hr]',
+	dbo.GetRateOfChange(DA.FairlyActiveMinutes, DA.ModeratelyActiveDistance)*60
+		AS 'Moderately Active Speed [km/hr]',
+	dbo.GetRateOfChange(DA.LightlyActiveMinutes, DA.LightActiveDistance)*60
+		AS 'Lightly Active Speed [km/hr]'
+FROM daily_activity_CTE AS DA
+JOIN daily_sleep AS DS
+	ON DS.Day_of_year = DA.ActivityDate AND DS.Id = DA.Id
